@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCreateUserWithEmailAndPassword, useUpdateProfile } from 'react-firebase-hooks/auth';
 import './Register.css';
 import auth from '../../../firebase.init';
-import SocialLogin from '../SocialLogin/SocialLogin';
 import Loading from '../../Shared/Loading/Loading';
+import SocialLogin from '../SocialLogin/SocialLogin';
+import UseToken from '../../../Hooks/UseToken';
 
 const Register = () => {
     const [agree, setAgree] = useState(false);
@@ -15,8 +16,12 @@ const Register = () => {
         error,
     ] = useCreateUserWithEmailAndPassword(auth, {sendEmailVerification: true});
     const [updateProfile, updating, updateError] = useUpdateProfile(auth);
+    let errorElement;
+    const [token] = UseToken(user || updateProfile);
 
     const navigate = useNavigate();
+    const location = useLocation();
+    let from = location.state?.from?.pathname || "/";
 
     const navigateLogin = () => {
         navigate('/login');
@@ -26,8 +31,13 @@ const Register = () => {
         return <Loading></Loading>
     }
 
-    if (user) {
-    //  console.log('user', user);  
+    if (error || updateError) {
+        errorElement = <p className='text-danger'>Error: {error?.message} {updateError?.message}</p>;
+    }
+
+    if (token) {
+        // navigate(from, { replace: true });
+        navigate('/home');
     }
 
     const handleRegister = async (event) => {
@@ -39,7 +49,7 @@ const Register = () => {
 
         await createUserWithEmailAndPassword(email, password);
         await updateProfile({ displayName: name });
-        // console.log('Updated profile');
+        console.log('Updated profile');
         navigate('/home');
     }
 
@@ -61,6 +71,7 @@ const Register = () => {
                     type="submit"
                     value="Register" />
             </form>
+            {errorElement}
             <p>Already have an account? <Link to="/login" className='text-primary pe-auto text-decoration-none' onClick={navigateLogin}>Please Login</Link> </p>
             <SocialLogin></SocialLogin>
         </div>
